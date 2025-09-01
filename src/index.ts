@@ -4,6 +4,7 @@ import clientsRouter from "./routes/clients";
 import unitsRouter from "./routes/units";
 import notificationsRouter from "./routes/notifications";
 import authRouter from "./routes/auth";
+import contractsRouter from "./routes/contracts";
 import { authenticateToken } from "./middleware/auth";
 
 const app = express();
@@ -23,6 +24,7 @@ app.use("/auth", authRouter);
 app.use("/clients", authenticateToken, clientsRouter);
 app.use("/units", authenticateToken, unitsRouter);
 app.use("/notifications", authenticateToken, notificationsRouter); // Add this
+app.use("/contracts", authenticateToken, contractsRouter); // Add this
 
 app.listen(PORT, () => {
     console.log(`🚀 Server ready at http://localhost:${PORT}`);

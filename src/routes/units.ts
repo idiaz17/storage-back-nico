@@ -5,9 +5,9 @@ const router = Router();
 
 // Mock DB for now
 let units = [
-    { id: "1", type: "2x2", status: "available", clientId: null },
-    { id: "2", type: "3x3", status: "rented", clientId: "1" },
-    { id: "3", type: "4x4", status: "maintenance", clientId: null },
+    { id: "1", type: "2x2", status: "available", clientId: null, monthlyRate: 100 },
+    { id: "2", type: "3x3", status: "rented", clientId: null, monthlyRate: 120 },
+    { id: "3", type: "4x4", status: "maintenance", clientId: null, monthlyRate: 140 },
 ];
 
 router.get("/", (req, res) => {
@@ -15,8 +15,8 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-    const { type, status, clientId } = req.body;
-    const newUnit = { id: Date.now().toString(), type, status, clientId };
+    const { type, status, clientId, monthlyRate } = req.body;
+    const newUnit = { id: Date.now().toString(), type, status, clientId, monthlyRate };
     units.push(newUnit);
     res.status(201).json(newUnit);
 });

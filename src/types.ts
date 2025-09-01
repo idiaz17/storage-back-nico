@@ -19,6 +19,10 @@ export interface Unit {
     label: string;
     size?: string;
     status: UnitStatus;
+    monthlyRate?: number;
+    location?: string;
+    features?: string[];
+    createdAt: string;
 }
 
 export interface Contract {
@@ -28,6 +32,10 @@ export interface Contract {
     startDate: string;
     endDate?: string;
     monthlyRate: number;
+    title: string;
+    content: string;
+    draft: boolean;
+    createdAt: string;
 }
 
 export interface Payment {
