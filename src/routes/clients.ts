@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db";
 import { Client } from "../types";
+import { InMemoryNotificationService } from "../services/InMemoryNotificationService";
 
 const router = Router();
 
@@ -23,6 +24,9 @@ router.post("/", (req, res) => {
         hasKeys: false,
         createdAt: new Date().toISOString(),
     };
+
+    InMemoryNotificationService.notifyNewClient(client.id, client.name, req.user.id);
+
     db.clients.push(client);
     res.status(201).json(client);
 });
