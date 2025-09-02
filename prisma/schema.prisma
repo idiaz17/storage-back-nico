@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma" // Add this line
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String
+  email    String @unique
+  password String
+  role     String @default("user")
+
+  // Relations
+  contracts     Contract[]     @relation("ContractCreatedBy")
+  units         Unit[]         @relation("UnitCreatedBy")
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  notes     String?
+  hasPaid   Boolean  @default(false)
+  hasKeys   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  contracts Contract[]
+  units     Unit[]
+}
+
+model Unit {
+  id          Int        @id @default(autoincrement())
+  type        String
+  status      UnitStatus @default(available)
+  monthlyRate Float
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  createdBy Int
+  user      User @relation(fields: [createdBy], references: [id], name: "UnitCreatedBy")
+
+  contracts Contract[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UnitStatus {
+  available
+  rented
+  maintenance
+}
+
+model Contract {
+  id          Int       @id @default(autoincrement())
+  clientId    String
+  unitId      Int
+  monthlyRate Float
+  startDate   DateTime
+  endDate     DateTime?
+  title       String
+  content     String
+  draft       Boolean   @default(true)
+  createdBy   Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  client Client @relation(fields: [clientId], references: [id])
+  unit   Unit   @relation(fields: [unitId], references: [id])
+  user   User   @relation(fields: [createdBy], references: [id], name: "ContractCreatedBy")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        Int
+  title         String
+  message       String
+  type          String   @default("info")
+  isRead        Boolean  @default(false)
+  relatedEntity String?
+  entityId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Change this line - use capital U for the relation field name
+  User User @relation(fields: [userId], references: [id])
+}

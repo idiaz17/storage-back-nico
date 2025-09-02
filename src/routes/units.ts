@@ -1,39 +1,106 @@
-// routes/units.ts
 import { Router } from "express";
+import prisma from "../lib/prisma"; // make sure this points to your Prisma client instance
 
 const router = Router();
 
-// Mock DB for now
-let units = [
-    { id: "1", type: "2x2", status: "available", clientId: null, monthlyRate: 100 },
-    { id: "2", type: "3x3", status: "rented", clientId: null, monthlyRate: 120 },
-    { id: "3", type: "4x4", status: "maintenance", clientId: null, monthlyRate: 140 },
-];
-
-router.get("/", (req, res) => {
-    res.json(units);
+// GET all units
+router.get("/", async (req, res) => {
+    try {
+        const units = await prisma.unit.findMany({
+            include: {
+                client: true,
+                user: true,
+            },
+            orderBy: { createdAt: "desc" },
+        });
+        res.json(units);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch units" });
+    }
 });
 
-router.post("/", (req, res) => {
-    const { type, status, clientId, monthlyRate } = req.body;
-    const newUnit = { id: Date.now().toString(), type, status, clientId, monthlyRate };
-    units.push(newUnit);
-    res.status(201).json(newUnit);
+// POST new unit - get user ID from auth instead of request body
+router.post("/", async (req, res) => {
+    try {
+        // Get user ID from authentication (adjust based on your auth setup)
+        const userId = req.user?.id; // This depends on your authentication middleware
+
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const { type, status, clientId, monthlyRate } = req.body;
+
+        // Convert monthlyRate to number
+        const monthlyRateNumber = typeof monthlyRate === 'string'
+            ? parseFloat(monthlyRate)
+            : monthlyRate;
+
+        const newUnit = await prisma.unit.create({
+            data: {
+                type,
+                status,
+                monthlyRate: monthlyRateNumber,
+                user: {
+                    connect: { id: userId } // Use authenticated user ID
+                },
+                // Only connect client if provided
+                ...(clientId && {
+                    client: {
+                        connect: { id: clientId }
+                    }
+                })
+            },
+        });
+
+        res.status(201).json(newUnit);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to create unit" });
+    }
 });
 
-router.put("/:id", (req, res) => {
-    const { id } = req.params;
-    const { type, status, clientId } = req.body;
-    units = units.map((u) =>
-        u.id === id ? { ...u, type, status, clientId } : u
-    );
-    res.json(units.find((u) => u.id === id));
-});
+// PUT update unit
+router.put("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type, status, clientId, monthlyRate } = req.body;
 
-router.delete("/:id", (req, res) => {
-    const { id } = req.params;
-    units = units.filter((u) => u.id !== id);
-    res.json({ success: true });
+        const updatedUnit = await prisma.unit.update({
+            where: { id: Number(id) },
+            data: {
+                type,
+                status,
+                monthlyRate: typeof monthlyRate === 'string'
+                    ? parseFloat(monthlyRate)
+                    : monthlyRate,
+                // Only update client if provided, otherwise disconnect
+                client: clientId
+                    ? { connect: { id: clientId } }
+                    : { disconnect: true }
+            },
+        });
+
+        res.json(updatedUnit);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to update unit" });
+    }
+});
+// DELETE unit
+router.delete("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        await prisma.unit.delete({
+            where: { id: Number(id) },
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to delete unit" });
+    }
 });
 
 export default router;
