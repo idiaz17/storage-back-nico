@@ -1,7 +1,7 @@
 import prisma from "../lib/prisma";
 
 export interface CreateNotificationParams {
-    userId: string;
+    userId: number;
     title: string;
     message: string;
     type?: "info" | "warning" | "success" | "error";
@@ -22,15 +22,15 @@ export const createNotification = async (params: CreateNotificationParams) => {
     });
 };
 
-export const getUserNotifications = async (userId: string) => {
-    return prisma.notifications.findMany({
+export const getUserNotifications = async (userId: number) => {
+    return prisma.notification.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
         include: {
             user: {
                 select: {
                     id: true,
-                    name: true,
+                    username: true,
                     email: true
                 }
             }
@@ -38,44 +38,34 @@ export const getUserNotifications = async (userId: string) => {
     });
 };
 
-export const getUnreadCount = async (userId: string) => {
+export const getUnreadCount = async (userId: number) => {
     return prisma.notification.count({
-        where: {
-            userId,
-            isRead: false
-        }
+        where: { userId, isRead: false }
     });
 };
 
-export const markAsRead = async (id: string, userId: string) => {
+export const markAsRead = async (id: string, userId: number) => {
+    const notif = await prisma.notification.findUnique({ where: { id } });
+    if (!notif || notif.userId !== userId) {
+        throw new Error("Unauthorized or not found");
+    }
     return prisma.notification.update({
-        where: {
-            id,
-            userId
-        },
-        data: {
-            isRead: true
-        }
+        where: { id },
+        data: { isRead: true }
     });
 };
 
-export const markAllAsRead = async (userId: string) => {
+export const markAllAsRead = async (userId: number) => {
     return prisma.notification.updateMany({
-        where: {
-            userId,
-            isRead: false
-        },
-        data: {
-            isRead: true
-        }
+        where: { userId, isRead: false },
+        data: { isRead: true }
     });
 };
 
-export const deleteNotification = async (id: string, userId: string) => {
-    return prisma.notification.delete({
-        where: {
-            id,
-            userId
-        }
-    });
+export const deleteNotification = async (id: string, userId: number) => {
+    const notif = await prisma.notification.findUnique({ where: { id } });
+    if (!notif || notif.userId !== userId) {
+        throw new Error("Unauthorized or not found");
+    }
+    return prisma.notification.delete({ where: { id } });
 };
