@@ -1,71 +1,37 @@
 import prisma from "../lib/prisma";
 
-export interface CreateNotificationParams {
-    userId: number;
+interface CreateNotificationInput {
+    clientId: string;
     title: string;
     message: string;
-    type?: "info" | "warning" | "success" | "error";
-    relatedEntity?: "client" | "unit" | "system" | null;
+    type?: "info" | "success" | "warning" | "error";
+    relatedEntity?: string | null;
     entityId?: string | null;
 }
 
-export const createNotification = async (params: CreateNotificationParams) => {
+export const createNotification = async ({
+    clientId,
+    title,
+    message,
+    type = "info",
+    relatedEntity = null,
+    entityId = null,
+}: CreateNotificationInput) => {
+    // Ensure client exists
+    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) {
+        throw new Error("Invalid clientId");
+    }
+
+    // Create notification
     return prisma.notification.create({
         data: {
-            userId: params.userId,
-            title: params.title,
-            message: params.message,
-            type: params.type || "info",
-            relatedEntity: params.relatedEntity || null,
-            entityId: params.entityId || null
-        }
+            clientId,
+            title,
+            message,
+            type,
+            relatedEntity,
+            entityId,
+        },
     });
-};
-
-export const getUserNotifications = async (userId: number) => {
-    return prisma.notification.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-        include: {
-            user: {
-                select: {
-                    id: true,
-                    username: true,
-                    email: true
-                }
-            }
-        }
-    });
-};
-
-export const getUnreadCount = async (userId: number) => {
-    return prisma.notification.count({
-        where: { userId, isRead: false }
-    });
-};
-
-export const markAsRead = async (id: string, userId: number) => {
-    const notif = await prisma.notification.findUnique({ where: { id } });
-    if (!notif || notif.userId !== userId) {
-        throw new Error("Unauthorized or not found");
-    }
-    return prisma.notification.update({
-        where: { id },
-        data: { isRead: true }
-    });
-};
-
-export const markAllAsRead = async (userId: number) => {
-    return prisma.notification.updateMany({
-        where: { userId, isRead: false },
-        data: { isRead: true }
-    });
-};
-
-export const deleteNotification = async (id: string, userId: number) => {
-    const notif = await prisma.notification.findUnique({ where: { id } });
-    if (!notif || notif.userId !== userId) {
-        throw new Error("Unauthorized or not found");
-    }
-    return prisma.notification.delete({ where: { id } });
 };

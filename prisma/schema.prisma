@@ -16,12 +16,12 @@ model User {
   role     String @default("user")
 
   // Relations
-  contracts     Contract[]     @relation("ContractCreatedBy")
-  units         Unit[]         @relation("UnitCreatedBy")
-  notifications Notification[]
+  contracts Contract[] @relation("ContractCreatedBy")
+  units     Unit[]     @relation("UnitCreatedBy")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
+  Notification Notification[]
 }
 
 model Client {
@@ -34,8 +34,10 @@ model Client {
   hasKeys   Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  contracts Contract[]
-  units     Unit[]
+  contracts    Contract[]
+  units        Unit[]
+  payment      Payment[]
+  notification Notification[]
 }
 
 model Unit {
@@ -52,8 +54,9 @@ model Unit {
 
   contracts Contract[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Payment   Payment[]
 }
 
 enum UnitStatus {
@@ -93,10 +96,35 @@ model Notification {
   type          String   @default("info")
   isRead        Boolean  @default(false)
   relatedEntity String?
-  entityId      String?
+  entityId      String? // This could reference Payment.id
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
 
-  // Change this line - use capital U for the relation field name
-  User User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  // Add cascade here
+  payment  Payment? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  Client   Client?  @relation(fields: [clientId], references: [id])
+  clientId String?
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  clientId  String
+  unitId    Int
+  amount    Float
+  status    PaymentStatus @default(pending)
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
+
+  client       Client         @relation(fields: [clientId], references: [id])
+  unit         Unit           @relation(fields: [unitId], references: [id])
+  Notification Notification[]
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  overdue
 }

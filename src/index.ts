@@ -5,6 +5,7 @@ import unitsRouter from "./routes/units";
 import notificationsRouter from "./routes/notifications";
 import authRouter from "./routes/auth";
 import contractsRouter from "./routes/contracts";
+import paymentsRouter from "./routes/payments"
 import { authenticateToken } from "./middleware/auth";
 import * as dotenv from "dotenv"
 
@@ -51,6 +52,7 @@ app.use("/clients", authenticateToken, clientsRouter);
 app.use("/units", authenticateToken, unitsRouter);
 app.use("/notifications", authenticateToken, notificationsRouter);
 app.use("/contracts", authenticateToken, contractsRouter);
+app.use("/payments", authenticateToken, paymentsRouter);
 
 
 

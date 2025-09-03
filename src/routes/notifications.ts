@@ -1,27 +1,26 @@
 import { Router } from "express";
-import { authenticateToken } from "../middleware/auth"; // Adjust based on your auth setup
+import { authenticateToken } from "../middleware/auth"; // your auth middleware
 import prisma from "../lib/prisma";
 
 const router = Router();
 
-// GET all notifications for a user
-// GET all notifications for a user
+// GET all notifications for a client
 router.get("/", authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const clientId = req.user.clientId; // logged-in client UUID
 
         const notifications = await prisma.notification.findMany({
-            where: { userId },
+            where: { clientId },
             orderBy: { createdAt: "desc" },
             include: {
-                User: {  // Change from 'user' to 'User'
+                client: {
                     select: {
                         id: true,
-                        username: true,  // Changed from 'name' to 'username'
-                        email: true
-                    }
-                }
-            }
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
         });
 
         res.json(notifications);
@@ -34,13 +33,13 @@ router.get("/", authenticateToken, async (req, res) => {
 // GET unread notifications count
 router.get("/unread-count", authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const clientId = req.user.clientId;
 
         const count = await prisma.notification.count({
             where: {
-                userId,
-                isRead: false
-            }
+                clientId,
+                isRead: false,
+            },
         });
 
         res.json({ count });
@@ -53,17 +52,21 @@ router.get("/unread-count", authenticateToken, async (req, res) => {
 // POST create new notification
 router.post("/", async (req, res) => {
     try {
-        const { userId, title, message, type, relatedEntity, entityId } = req.body;
+        const { clientId, title, message, type, relatedEntity, entityId } = req.body;
+
+        if (!clientId || !title || !message) {
+            return res.status(400).json({ error: "clientId, title, and message are required" });
+        }
 
         const newNotification = await prisma.notification.create({
             data: {
-                userId,
+                clientId, // string UUID of client
                 title,
                 message,
                 type: type || "info",
                 relatedEntity: relatedEntity || null,
-                entityId: entityId || null
-            }
+                entityId: entityId || null,
+            },
         });
 
         res.status(201).json(newNotification);
@@ -77,16 +80,11 @@ router.post("/", async (req, res) => {
 router.put("/:id/read", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.id;
+        const clientId = req.user.clientId;
 
-        const notification = await prisma.notification.update({
-            where: {
-                id,
-                userId // Ensure user can only mark their own notifications as read
-            },
-            data: {
-                isRead: true
-            }
+        const notification = await prisma.notification.updateMany({
+            where: { id, clientId },
+            data: { isRead: true },
         });
 
         res.json(notification);
@@ -99,16 +97,16 @@ router.put("/:id/read", authenticateToken, async (req, res) => {
 // PUT mark all notifications as read
 router.put("/mark-all-read", authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const clientId = req.user.clientId;
 
         await prisma.notification.updateMany({
             where: {
-                userId,
-                isRead: false
+                clientId,
+                isRead: false,
             },
             data: {
-                isRead: true
-            }
+                isRead: true,
+            },
         });
 
         res.json({ success: true });
@@ -122,13 +120,10 @@ router.put("/mark-all-read", authenticateToken, async (req, res) => {
 router.delete("/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.id;
+        const clientId = req.user.clientId;
 
-        await prisma.notification.delete({
-            where: {
-                id,
-                userId // Ensure user can only delete their own notifications
-            }
+        await prisma.notification.deleteMany({
+            where: { id, clientId },
         });
 
         res.json({ success: true });
