@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
 router.put("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, email, phone, notes } = req.body;
+        const { name, email, phone, notes, hasPaid, hasKeys } = req.body;
 
         const client = await prisma.client.update({
             where: { id },
@@ -70,18 +70,20 @@ router.put("/:id", async (req, res) => {
                 name,
                 email,
                 phone,
-                notes
+                notes,
+                hasPaid,
+                hasKeys
             }
-        })
+        });
 
-        res.json(client)
+        res.json(client);
     } catch (error) {
-        if (typeof error === "object" && error !== null && "code" in error && (error as any).code === 'P2025') {
+        if (typeof error === "object" && error !== null && "code" in error && (error as any).code === "P2025") {
             return res.status(404).json({ error: "Client not found" });
         }
-        res.status(500).json({ error: 'Failed to update client' })
+        res.status(500).json({ error: "Failed to update client" });
     }
-})
+});
 
 // DELETE client
 router.delete("/:id", async (req, res) => {

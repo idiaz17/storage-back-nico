@@ -72,11 +72,14 @@ model Contract {
   title       String
   content     String
   draft       Boolean   @default(true)
-  createdBy   Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  signed      Boolean   @default(false) // ✅ Add this
+  signedAt    DateTime? // ✅ Track when signed
+  signedBy    Int? // ✅ Who signed (User id)
 
-  // Relations
+  createdBy Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   client Client @relation(fields: [clientId], references: [id])
   unit   Unit   @relation(fields: [unitId], references: [id])
   user   User   @relation(fields: [createdBy], references: [id], name: "ContractCreatedBy")

@@ -1,23 +1,19 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
-import { authenticateToken } from "../middleware/auth"; // ✅ import it
+import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
 
-// GET all contracts
+/**
+ * ✅ GET all contracts
+ */
 router.get("/", authenticateToken, async (req, res) => {
     try {
         const contracts = await prisma.contract.findMany({
             include: {
-                client: {
-                    select: { id: true, name: true, email: true, phone: true }
-                },
-                unit: {
-                    select: { id: true, type: true, status: true, monthlyRate: true }
-                },
-                user: {
-                    select: { id: true, username: true, email: true }
-                },
+                client: { select: { id: true, name: true, email: true, phone: true } },
+                unit: { select: { id: true, type: true, status: true, monthlyRate: true } },
+                user: { select: { id: true, username: true, email: true } },
             },
             orderBy: { createdAt: "desc" },
         });
@@ -28,20 +24,12 @@ router.get("/", authenticateToken, async (req, res) => {
     }
 });
 
-// CREATE new contract
+/**
+ * ✅ CREATE new contract
+ */
 router.post("/", authenticateToken, async (req, res) => {
     try {
-        const {
-            clientId,
-            unitId,
-            monthlyRate,
-            startDate,
-            endDate,
-            title,
-            content,
-            draft,
-        } = req.body;
-
+        const { clientId, unitId, monthlyRate, startDate, endDate, title, content, draft } = req.body;
         const createdBy = req.user.id;
 
         const newContract = await prisma.contract.create({
@@ -65,7 +53,9 @@ router.post("/", authenticateToken, async (req, res) => {
     }
 });
 
-// UPDATE contract
+/**
+ * ✅ UPDATE contract
+ */
 router.put("/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -89,7 +79,9 @@ router.put("/:id", authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE contract
+/**
+ * ✅ DELETE contract
+ */
 router.delete("/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -105,12 +97,13 @@ router.delete("/:id", authenticateToken, async (req, res) => {
     }
 });
 
-// CREATE draft contract
+/**
+ * ✅ CREATE draft contract
+ */
 router.post("/draft/:clientId", authenticateToken, async (req, res) => {
     try {
         const { clientId } = req.params;
         const { unitId, monthlyRate, startDate, endDate } = req.body;
-
         const createdBy = req.user.id;
 
         const draftContract = await prisma.contract.create({
@@ -134,7 +127,9 @@ router.post("/draft/:clientId", authenticateToken, async (req, res) => {
     }
 });
 
-// FINALIZE contract
+/**
+ * ✅ FINALIZE contract (admin action)
+ */
 router.patch("/:id/finalize", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -148,6 +143,30 @@ router.patch("/:id/finalize", authenticateToken, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to finalize contract" });
+    }
+});
+
+/**
+ * ✅ SIGN contract (client action)
+ */
+router.patch("/:id/sign", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const signedContract = await prisma.contract.update({
+            where: { id: Number(id) },
+            data: {
+                signed: true,
+                signedAt: new Date(),
+                signedBy: userId,
+            },
+        });
+
+        res.json(signedContract);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to sign contract" });
     }
 });
 
