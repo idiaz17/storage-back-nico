@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const { type, status, clientId, monthlyRate } = req.body;
+        const { type, status, clientId, monthlyRate, latitude, longitude, address_street } = req.body;
 
         // Convert monthlyRate to number
         const monthlyRateNumber = typeof monthlyRate === 'string'
@@ -41,6 +41,8 @@ router.post("/", async (req, res) => {
                 type,
                 status,
                 monthlyRate: monthlyRateNumber,
+                latitude,
+                longitude, address_street,
                 user: {
                     connect: { id: userId } // Use authenticated user ID
                 },
@@ -64,13 +66,15 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, status, clientId, monthlyRate } = req.body;
+        const { type, status, clientId, monthlyRate, latitude, longitude, address_street } = req.body;
 
         const updatedUnit = await prisma.unit.update({
             where: { id: Number(id) },
             data: {
                 type,
                 status,
+                latitude,
+                longitude, address_street,
                 monthlyRate: typeof monthlyRate === 'string'
                     ? parseFloat(monthlyRate)
                     : monthlyRate,

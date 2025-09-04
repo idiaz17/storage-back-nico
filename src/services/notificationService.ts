@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 
 interface CreateNotificationInput {
     clientId: string;
+    userId: number; // <-- this must match User.id type
     title: string;
     message: string;
     type?: "info" | "success" | "warning" | "error";
@@ -9,24 +10,19 @@ interface CreateNotificationInput {
     entityId?: string | null;
 }
 
-export const createNotification = async ({
+export async function createNotification({
     clientId,
+    userId,
     title,
     message,
     type = "info",
     relatedEntity = null,
     entityId = null,
-}: CreateNotificationInput) => {
-    // Ensure client exists
-    const client = await prisma.client.findUnique({ where: { id: clientId } });
-    if (!client) {
-        throw new Error("Invalid clientId");
-    }
-
-    // Create notification
+}: CreateNotificationInput) {
     return prisma.notification.create({
         data: {
-            clientId,
+            clientId, // directly assign clientId
+            userId,   // directly assign userId
             title,
             message,
             type,
@@ -34,4 +30,4 @@ export const createNotification = async ({
             entityId,
         },
     });
-};
+}

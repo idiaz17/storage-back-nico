@@ -41,10 +41,13 @@ model Client {
 }
 
 model Unit {
-  id          Int        @id @default(autoincrement())
-  type        String
-  status      UnitStatus @default(available)
-  monthlyRate Float
+  id             Int        @id @default(autoincrement())
+  type           String
+  status         UnitStatus @default(available)
+  monthlyRate    Float
+  latitude       Float?
+  longitude      Float?
+  address_street String? // <-- new optional field
 
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id])
@@ -99,13 +102,13 @@ model Notification {
   entityId      String? // This could reference Payment.id
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
+  clientId      String // UUID from Client
 
   user User @relation(fields: [userId], references: [id])
 
   // Add cascade here
-  payment  Payment? @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  Client   Client?  @relation(fields: [clientId], references: [id])
-  clientId String?
+  payment Payment? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  client  Client   @relation(fields: [clientId], references: [id])
 }
 
 model Payment {

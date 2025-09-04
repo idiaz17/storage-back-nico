@@ -62,13 +62,15 @@ router.post("/", async (req, res) => {
         });
 
         await createNotification({
-            clientId: payment.clientId, // this must be a valid UUID
+            clientId: payment.clientId,
+            userId: req.user.id, // must match User.id type
             title: "New Payment Created",
             message: `A new payment of $${payment.amount} has been created for unit ${unit.type}.`,
             type: "info",
             relatedEntity: "payment",
             entityId: payment.id,
         });
+
 
         res.status(201).json(payment);
     } catch (err) {
@@ -107,12 +109,13 @@ router.patch("/:id", async (req, res) => {
 
         if (message) {
             await createNotification({
-                clientId: payment.clientId, // this must be a valid UUID
-                title: "Payment Update",
-                message,
-                type,
+                clientId: payment.clientId,
+                title: "Payment Updated",
+                message: `A new payment of $${payment.amount} has been updated for unit ${id}.`,
+                type: "info",
                 relatedEntity: "payment",
                 entityId: payment.id,
+                userId: req.user.id, // <-- add this
             });
         }
 

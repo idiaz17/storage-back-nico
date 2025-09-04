@@ -50,7 +50,7 @@ router.get("/unread-count", authenticateToken, async (req, res) => {
 });
 
 // POST create new notification
-router.post("/", async (req, res) => {
+router.post("/", authenticateToken, async (req, res) => {
     try {
         const { clientId, title, message, type, relatedEntity, entityId } = req.body;
 
@@ -60,7 +60,8 @@ router.post("/", async (req, res) => {
 
         const newNotification = await prisma.notification.create({
             data: {
-                clientId, // string UUID of client
+                clientId: clientId,  // just use the ID
+                userId: req.user.id, // user relation as foreign key
                 title,
                 message,
                 type: type || "info",
@@ -68,7 +69,6 @@ router.post("/", async (req, res) => {
                 entityId: entityId || null,
             },
         });
-
         res.status(201).json(newNotification);
     } catch (err) {
         console.error(err);
