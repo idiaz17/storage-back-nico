@@ -105,9 +105,9 @@ router.post('/login', [
         // Generate token
         const token = jwt.sign(
             { userId: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET || 'your-secret-key',
-            { expiresIn: '24h' }
-        );
+            process.env.JWT_SECRET || "your-secret-key",
+            { expiresIn: "24h" }
+        ).toString();
 
         res.json({
             token,
@@ -119,7 +119,7 @@ router.post('/login', [
             }
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error during login' });
+        res.status(500).json({ message: 'Server error during     login' });
     }
 });
 

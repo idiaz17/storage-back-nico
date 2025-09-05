@@ -15,6 +15,9 @@ model User {
   password String
   role     String @default("user")
 
+  clientId String? // 👈 link user to a client (if they’re an external client user)
+  client   Client? @relation(fields: [clientId], references: [id])
+
   // Relations
   contracts Contract[] @relation("ContractCreatedBy")
   units     Unit[]     @relation("UnitCreatedBy")
@@ -22,6 +25,7 @@ model User {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @default(now()) @updatedAt
   Notification Notification[]
+  Activity     Activity[]
 }
 
 model Client {
@@ -38,6 +42,8 @@ model Client {
   units        Unit[]
   payment      Payment[]
   notification Notification[]
+  Activity     Activity[]
+  User         User[]
 }
 
 model Unit {
@@ -86,29 +92,30 @@ model Contract {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  client Client @relation(fields: [clientId], references: [id])
-  unit   Unit   @relation(fields: [unitId], references: [id])
-  user   User   @relation(fields: [createdBy], references: [id], name: "ContractCreatedBy")
+  client       Client         @relation(fields: [clientId], references: [id])
+  unit         Unit           @relation(fields: [unitId], references: [id])
+  user         User           @relation(fields: [createdBy], references: [id], name: "ContractCreatedBy")
+  Notification Notification[]
 }
 
 model Notification {
   id            String   @id @default(uuid())
   userId        Int
+  clientId      String // required
   title         String
   message       String
   type          String   @default("info")
   isRead        Boolean  @default(false)
   relatedEntity String?
-  entityId      String? // This could reference Payment.id
+  contractId    Int?
+  entityId      String? // optional for payments
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
-  clientId      String // UUID from Client
 
-  user User @relation(fields: [userId], references: [id])
-
-  // Add cascade here
-  payment Payment? @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  client  Client   @relation(fields: [clientId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  client   Client    @relation(fields: [clientId], references: [id])
+  contract Contract? @relation(fields: [contractId], references: [id])
+  payment  Payment?  @relation(fields: [entityId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
@@ -130,4 +137,16 @@ enum PaymentStatus {
   pending
   paid
   overdue
+}
+
+model Activity {
+  id        String   @id @default(uuid())
+  userId    Int
+  clientId  String
+  type      String
+  details   String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
 }

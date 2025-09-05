@@ -2,9 +2,53 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma'; // Import your Prisma client
 
-export interface AuthRequest extends Request {
-    user?: any;
+interface DecodedToken {
+    id: number;
+    role: string; // e.g. "admin" | "client"
 }
+export interface AuthRequest extends Request {
+    user?: {
+        id: number;
+        role: string;
+        clientId?: number;
+    };
+}
+
+export const authMiddleware = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return res.status(401).json({ error: "No token provided" });
+
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+
+        if (!decoded?.id) return res.status(401).json({ error: "Invalid token" });
+
+        // Fetch user from DB
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id },
+            include: { client: true }, // 👈 make sure your Prisma schema has `client` relation
+        });
+
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Attach enriched user info to request
+        req.user = {
+            id: user.id,
+            role: user.role,
+            clientId: user.client?.id, // 👈 automatically add clientId if exists
+        };
+
+        next();
+    } catch (err) {
+        console.error("Auth error:", err);
+        res.status(401).json({ error: "Unauthorized" });
+    }
+};
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];

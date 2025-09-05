@@ -24,9 +24,12 @@ app.use(cors({
         // List of allowed origins
         const allowedOrigins = [
             'http://localhost:3000', // React dev server
+            'http://localhost:3079', // React dev server
             'http://localhost:5173', // Vite dev server
+            'http://localhost:3152',
             'http://127.0.0.1:3000',
             'http://127.0.0.1:5173',
+            'http://127.0.0.1:3152',
             // Add your production domains here later
         ];
 
