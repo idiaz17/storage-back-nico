@@ -8,13 +8,18 @@ import contractsRouter from "./routes/contracts";
 import paymentsRouter from "./routes/payments"
 import { authenticateToken } from "./middleware/auth";
 import * as dotenv from "dotenv"
+import rateLimit from "express-rate-limit";
 
 const app = express();
 const PORT = 4000;
 
 dotenv.config();
 app.use(express.json());
-
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 100, // limit each IP to 100 requests per 15 minutes
+// });
+// app.use(limiter);
 // Enhanced CORS configuration
 app.use(cors({
     origin: function (origin, callback) {
