@@ -171,16 +171,23 @@ router.put("/:id", async (req: AuthRequest, res) => {
 
 // DELETE unit
 router.delete("/:id", async (req, res) => {
-    const id = Number(req.params.id);
-    if (!id || isNaN(id)) return res.status(400).json({ error: "Unit id must be a number" });
+  const id = Number(req.params.id);
+  if (!id || isNaN(id)) return res.status(400).json({ error: "Unit id must be a number" });
 
-    try {
-        await prisma.unit.delete({ where: { id } });
-        res.json({ success: true });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Failed to delete unit" });
-    }
+  try {
+    // First delete reservations linked to this unit
+    await prisma.reservation.deleteMany({
+      where: { unitId: id },
+    });
+
+    // Now delete the unit
+    await prisma.unit.delete({ where: { id } });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete unit" });
+  }
 });
 
 

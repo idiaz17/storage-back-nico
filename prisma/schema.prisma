@@ -163,7 +163,6 @@ model Activity {
 
 model Reservation {
   id          Int      @id @default(autoincrement())
-  unit        Unit     @relation(fields: [unitId], references: [id])
   unitId      Int
   location    String
   type        String
@@ -177,6 +176,6 @@ model Reservation {
   phone       String
   status      String   @default("pending")
   createdAt   DateTime @default(now())
-
+  unit      Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
   Notification Notification[] // <-- Add this line for the relation back to Notification
 }
