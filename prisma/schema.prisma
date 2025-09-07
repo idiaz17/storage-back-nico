@@ -63,6 +63,8 @@ model Unit {
 
   contracts Contract[]
 
+  reservations Reservation[] // <-- Add this line for the relation
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   Payment   Payment[]
@@ -70,6 +72,7 @@ model Unit {
 
 enum UnitStatus {
   available
+  reserved   // 👈 add this
   rented
   maintenance
 }
@@ -149,4 +152,22 @@ model Activity {
 
   user   User   @relation(fields: [userId], references: [id])
   client Client @relation(fields: [clientId], references: [id])
+}
+
+model Reservation {
+  id          Int      @id @default(autoincrement())
+  unit        Unit     @relation(fields: [unitId], references: [id])
+  unitId      Int
+  location    String
+  type        String
+  size        String
+  entryDate   DateTime
+  goodsValue  String
+  postalCode  String
+  firstName   String
+  lastName    String
+  email       String
+  phone       String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
 }

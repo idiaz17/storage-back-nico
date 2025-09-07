@@ -9,6 +9,9 @@ import paymentsRouter from "./routes/payments"
 import { authenticateToken } from "./middleware/auth";
 import * as dotenv from "dotenv"
 import rateLimit from "express-rate-limit";
+import publicReservationsRouter from "./routes/publicReservations"
+import publicUnitsRouter from "./routes/publicUnits"
+import adminReservationsRouter from "./routes/adminReservations"
 
 const app = express();
 const PORT = 4000;
@@ -61,7 +64,10 @@ app.use("/units", authenticateToken, unitsRouter);
 app.use("/notifications", authenticateToken, notificationsRouter);
 app.use("/contracts", authenticateToken, contractsRouter);
 app.use("/payments", authenticateToken, paymentsRouter);
+app.use("/admin/reservations", authenticateToken, adminReservationsRouter);
 
+app.use("/public/reservations", publicReservationsRouter); 
+app.use("/public/units", publicUnitsRouter); 
 
 
 app.listen(PORT, () => {
