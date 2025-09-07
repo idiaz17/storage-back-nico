@@ -81,59 +81,92 @@ router.get("/:id/timeline", async (req, res) => {
 });
 
 // POST new unit
-router.post("/", async (req, res) => {
-    try {
-        const userId = req.user?.id; // adjust based on your auth middleware
-        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+// POST new unit
+router.post("/", async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        const { type, status, clientId, monthlyRate, latitude, longitude, address_street } = req.body;
+    const {
+      type,
+      status,
+      clientId,
+      monthlyRate,
+      latitude,
+      longitude,
+      address_street,
+      city,
+      province,
+      country,
+      postal_code,
+    } = req.body;
 
-        const newUnit = await prisma.unit.create({
-            data: {
-                type,
-                status,
-                monthlyRate: typeof monthlyRate === "string" ? parseFloat(monthlyRate) : monthlyRate,
-                latitude,
-                longitude,
-                address_street,
-                user: { connect: { id: userId } },
-                ...(clientId && { client: { connect: { id: clientId } } }),
-            },
-        });
+    const newUnit = await prisma.unit.create({
+      data: {
+        type,
+        status,
+        monthlyRate: typeof monthlyRate === "string" ? parseFloat(monthlyRate) : monthlyRate,
+        latitude,
+        longitude,
+        address_street,
+        city,
+        province,
+        country,
+        postal_code,
+        user: { connect: { id: userId } },
+        ...(clientId && { client: { connect: { id: clientId } } }),
+      },
+    });
 
-        res.status(201).json(newUnit);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Failed to create unit" });
-    }
+    res.status(201).json(newUnit);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create unit" });
+  }
 });
 
 // PUT update unit
-router.put("/:id", async (req, res) => {
-    const id = Number(req.params.id);
-    if (!id || isNaN(id)) return res.status(400).json({ error: "Unit id must be a number" });
+router.put("/:id", async (req: AuthRequest, res) => {
+  const id = Number(req.params.id);
+  if (!id || isNaN(id)) return res.status(400).json({ error: "Unit id must be a number" });
 
-    try {
-        const { type, status, clientId, monthlyRate, latitude, longitude, address_street } = req.body;
+  try {
+    const {
+      type,
+      status,
+      clientId,
+      monthlyRate,
+      latitude,
+      longitude,
+      address_street,
+      city,
+      province,
+      country,
+      postal_code,
+    } = req.body;
 
-        const updatedUnit = await prisma.unit.update({
-            where: { id },
-            data: {
-                type,
-                status,
-                latitude,
-                longitude,
-                address_street,
-                monthlyRate: typeof monthlyRate === "string" ? parseFloat(monthlyRate) : monthlyRate,
-                client: clientId ? { connect: { id: clientId } } : { disconnect: true },
-            },
-        });
+    const updatedUnit = await prisma.unit.update({
+      where: { id },
+      data: {
+        type,
+        status,
+        monthlyRate: typeof monthlyRate === "string" ? parseFloat(monthlyRate) : monthlyRate,
+        latitude,
+        longitude,
+        address_street,
+        city,
+        province,
+        country,
+        postal_code,
+        client: clientId ? { connect: { id: clientId } } : { disconnect: true },
+      },
+    });
 
-        res.json(updatedUnit);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Failed to update unit" });
-    }
+    res.json(updatedUnit);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update unit" });
+  }
 });
 
 // DELETE unit

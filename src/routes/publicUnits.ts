@@ -17,6 +17,10 @@ router.get("/available", async (req, res) => {
                 latitude: true,
                 longitude: true,
                 address_street: true,
+                city: true,          // Add this
+                province: true,      // Add this
+                country: true,       // Add this
+                postal_code: true,   // Add this
                 status: true,
             },
             orderBy: { monthlyRate: "asc" },
@@ -28,5 +32,4 @@ router.get("/available", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch available units" });
     }
 });
-
 export default router;
