@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import { createNotification } from "../services/notificationService";
+import puppeteer from "puppeteer";
 
 const router = Router();
 
@@ -144,6 +145,96 @@ router.delete("/:id", async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to delete payment" });
+    }
+});
+
+router.get("/:id/invoice", async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const payment = await prisma.payment.findUnique({
+            where: { id },
+            include: {
+                client: { select: { id: true, name: true, email: true, phone: true } },
+                unit: { select: { id: true, type: true, monthlyRate: true } },
+            },
+        });
+
+        if (!payment) return res.status(404).json({ error: "Payment not found" });
+
+        // Build HTML invoice
+        const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Invoice #${payment.id}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: #111; }
+            header { display:flex; justify-content:space-between; margin-bottom: 40px; }
+            .logo { font-weight: bold; font-size: 24px; color: #e11d48; }
+            h1 { font-size: 20px; margin-bottom: 10px; }
+            .meta { font-size: 12px; color: #555; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { padding: 8px; border-bottom: 1px solid #ccc; text-align: left; }
+            .total { text-align: right; font-weight: bold; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <header>
+            <div class="logo">STORAGE</div>
+            <div class="meta">
+              Invoice #: ${payment.id}<br/>
+              Date: ${payment.createdAt.toISOString().split("T")[0]}
+            </div>
+          </header>
+
+          <h1>Invoice</h1>
+          <p>Client: <strong>${payment.client?.name ?? "—"}</strong><br/>
+          Email: ${payment.client?.email ?? "—"}<br/>
+          Phone: ${payment.client?.phone ?? "—"}</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Unit</th>
+                <th>Amount (€)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Payment for storage unit rental</td>
+                <td>${payment.unit?.type ?? "—"} (ID: ${payment.unit?.id ?? "—"})</td>
+                <td>${payment.amount.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="total">
+            Total: €${payment.amount.toFixed(2)}
+          </div>
+        </body>
+      </html>
+    `;
+
+        // Render PDF with Puppeteer
+        const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: "networkidle0" });
+        const pdfBuffer = await page.pdf({
+            format: "A4",
+            printBackground: true,
+            margin: { top: "20mm", bottom: "20mm", left: "20mm", right: "20mm" },
+        });
+        await browser.close();
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename=invoice-${payment.id}.pdf`);
+        res.send(pdfBuffer);
+    } catch (err) {
+        console.error("Failed to generate invoice:", err);
+        res.status(500).json({ error: "Failed to generate invoice" });
     }
 });
 export default router;
