@@ -1,26 +1,22 @@
-
-import { Router, Request } from "express";
-import { authenticateToken } from "../middleware/auth";
-import prisma from "../lib/prisma";
-
-const router = Router();
-interface AuthRequest extends Request {
-    user?: any
-    params: any;
-    body: any;
-    query: any
-}
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../middleware/auth");
+const prisma_1 = __importDefault(require("../lib/prisma"));
+const router = (0, express_1.Router)();
 /**
  * 📥 GET notifications (with pagination + filters)
  * - Admins/staff can see all
  * - Clients only see their own
  */
-router.get("/", authenticateToken, async (req: AuthRequest, res: any) => {
+router.get("/", auth_1.authenticateToken, async (req, res) => {
     try {
         const { page = 1, limit = 10, type, unread } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
-
-        const where: any = {};
+        const where = {};
         if (req.user.role === "client") {
             where.clientId = req.user.clientId;
         }
@@ -30,9 +26,8 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: any) => {
         if (unread === "true") {
             where.isRead = false;
         }
-
         const [notifications, total] = await Promise.all([
-            prisma.notification.findMany({
+            prisma_1.default.notification.findMany({
                 where,
                 skip,
                 take: Number(limit),
@@ -46,9 +41,8 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: any) => {
                     },
                 },
             }),
-            prisma.notification.count({ where }),
+            prisma_1.default.notification.count({ where }),
         ]);
-
         res.json({
             data: notifications,
             pagination: {
@@ -58,45 +52,42 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: any) => {
                 totalPages: Math.ceil(total / Number(limit)),
             },
         });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch notifications" });
     }
 });
-
 /**
  * 🔢 GET unread count
  */
-router.get("/unread-count", authenticateToken, async (req: AuthRequest, res: any) => {
+router.get("/unread-count", auth_1.authenticateToken, async (req, res) => {
     try {
-        const where: any = {};
+        const where = {};
         if (req.user.role === "client") {
             where.clientId = req.user.clientId;
         }
         where.isRead = false;
-
-        const count = await prisma.notification.count({ where });
+        const count = await prisma_1.default.notification.count({ where });
         res.json({ count });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch unread count" });
     }
 });
-
 /**
  * ➕ Create notification (manual, usually system will auto-create)
  */
-router.post("/", authenticateToken, async (req: AuthRequest, res: any) => {
+router.post("/", auth_1.authenticateToken, async (req, res) => {
     try {
         const { clientId, title, message, type, relatedEntity, entityId } = req.body;
-
         if (!title || !message) {
             return res
                 .status(400)
                 .json({ error: "title and message are required" });
         }
-
-        const newNotification = await prisma.notification.create({
+        const newNotification = await prisma_1.default.notification.create({
             data: {
                 clientId: clientId ?? req.user.clientId,
                 userId: req.user.id,
@@ -107,102 +98,88 @@ router.post("/", authenticateToken, async (req: AuthRequest, res: any) => {
                 entityId: entityId || null,
             },
         });
-
         res.status(201).json(newNotification);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to create notification" });
     }
 });
-
 /**
  * ✅ Mark single as read
  */
-router.put("/:id/read", authenticateToken, async (req: AuthRequest, res: any) => {
+router.put("/:id/read", auth_1.authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-
-        const where: any = { id };
+        const where = { id };
         if (req.user.role === "client") {
             where.clientId = req.user.clientId;
         }
-
-        const notification = await prisma.notification.updateMany({
+        const notification = await prisma_1.default.notification.updateMany({
             where,
             data: { isRead: true },
         });
-
         res.json(notification);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to mark notification as read" });
     }
 });
-
 /**
  * ✅ Mark all as read
  */
-router.put("/mark-all-read", authenticateToken, async (req: AuthRequest, res: any) => {
+router.put("/mark-all-read", auth_1.authenticateToken, async (req, res) => {
     try {
-        const where: any = { isRead: false };
+        const where = { isRead: false };
         if (req.user.role === "client") {
             where.clientId = req.user.clientId;
         }
-
-        await prisma.notification.updateMany({
+        await prisma_1.default.notification.updateMany({
             where,
             data: { isRead: true },
         });
-
         res.json({ success: true });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to mark all notifications as read" });
     }
 });
-
 /**
  * 🗑 Delete notification
  */
-router.delete("/:id", authenticateToken, async (req: AuthRequest, res: any) => {
+router.delete("/:id", auth_1.authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-
-        const where: any = { id };
+        const where = { id };
         if (req.user.role === "client") {
             where.clientId = req.user.clientId;
         }
-
-        await prisma.notification.deleteMany({ where });
-
+        await prisma_1.default.notification.deleteMany({ where });
         res.json({ success: true });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to delete notification" });
     }
 });
-
-
 // GET /notifications/stream - SSE
-router.get("/stream", authenticateToken, async (req: AuthRequest, res: any) => {
+router.get("/stream", auth_1.authenticateToken, async (req, res) => {
     try {
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
         res.flushHeaders();
-
         const clientId = req.user.clientId;
-
         // Send a heartbeat every 30s to keep connection alive
         const heartbeat = setInterval(() => {
             res.write(`event: heartbeat\ndata: {}\n\n`);
         }, 30000);
-
         // Simple example: poll database every 5s for new notifications
         let lastTimestamp = new Date();
-
         const interval = setInterval(async () => {
-            const newNotifications = await prisma.notification.findMany({
+            const newNotifications = await prisma_1.default.notification.findMany({
                 where: {
                     clientId,
                     createdAt: { gt: lastTimestamp },
@@ -210,7 +187,6 @@ router.get("/stream", authenticateToken, async (req: AuthRequest, res: any) => {
                 include: { client: true, user: true },
                 orderBy: { createdAt: "desc" },
             });
-
             if (newNotifications.length > 0) {
                 newNotifications.forEach((n) => {
                     res.write(`data: ${JSON.stringify(n)}\n\n`);
@@ -218,17 +194,16 @@ router.get("/stream", authenticateToken, async (req: AuthRequest, res: any) => {
                 lastTimestamp = new Date();
             }
         }, 5000);
-
         // Cleanup when client disconnects
         req.on("close", () => {
             clearInterval(interval);
             clearInterval(heartbeat);
             res.end();
         });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).end();
     }
 });
-
-export default router;
+exports.default = router;

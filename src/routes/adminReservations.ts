@@ -3,7 +3,10 @@ import prisma from "../lib/prisma";
 import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
-
+interface AuthRequest extends Request {
+    user?: any
+    params: any
+}
 // GET /admin/reservations
 router.get("/", authenticateToken, async (req, res) => {
     try {
@@ -20,9 +23,9 @@ router.get("/", authenticateToken, async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 });
-router.put("/:id/confirm", authenticateToken, async (req, res) => {
+router.put("/:id/confirm", authenticateToken, async (req: AuthRequest, res: any) => {
     try {
-        const { id } = req.params;
+        const { id, } = req.params;
 
         const reservation = await prisma.reservation.findUnique({
             where: { id: Number(id) },

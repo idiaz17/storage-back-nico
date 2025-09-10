@@ -1,32 +1,27 @@
-import { Router } from "express";
-import prisma from "../lib/prisma";
-import { authenticateToken } from "../middleware/auth"; // Add authentication
-
-const router = Router();
-interface AuthRequest extends Request {
-    user?: any
-    params: any;
-    body: any;
-    query: any
-}
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = __importDefault(require("../lib/prisma"));
+const auth_1 = require("../middleware/auth"); // Add authentication
+const router = (0, express_1.Router)();
 // GET all contracts
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", auth_1.authenticateToken, async (req, res) => {
     try {
         const { draft, clientId, unitId } = req.query;
-
-        const whereClause: any = {};
-
+        const whereClause = {};
         if (draft !== undefined) {
             whereClause.draft = draft === 'true';
         }
         if (clientId) {
-            whereClause.clientId = clientId as string;
+            whereClause.clientId = clientId;
         }
         if (unitId) {
-            whereClause.unitId = parseInt(unitId as string);
+            whereClause.unitId = parseInt(unitId);
         }
-
-        const contracts = await prisma.contract.findMany({
+        const contracts = await prisma_1.default.contract.findMany({
             where: whereClause,
             include: {
                 client: {
@@ -56,18 +51,17 @@ router.get("/", authenticateToken, async (req, res) => {
             orderBy: { createdAt: "desc" },
         });
         res.json(contracts);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch contracts" });
     }
 });
-
 // GET single contract by ID
-router.get("/:id", authenticateToken, async (req, res) => {
+router.get("/:id", auth_1.authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-
-        const contract = await prisma.contract.findUnique({
+        const contract = await prisma_1.default.contract.findUnique({
             where: { id: Number(id) },
             include: {
                 client: {
@@ -96,49 +90,33 @@ router.get("/:id", authenticateToken, async (req, res) => {
                 },
             },
         });
-
         if (!contract) {
             return res.status(404).json({ error: "Contract not found" });
         }
-
         res.json(contract);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch contract" });
     }
 });
-
 // CREATE new contract
-router.post("/", authenticateToken, async (req: AuthRequest, res: any) => {
+router.post("/", auth_1.authenticateToken, async (req, res) => {
     try {
-        const {
-            clientId,
-            unitId,
-            monthlyRate,
-            startDate,
-            endDate,
-            title,
-            content,
-            draft,
-        } = req.body;
-
+        const { clientId, unitId, monthlyRate, startDate, endDate, title, content, draft, } = req.body;
         // Get user ID from authentication
         const createdBy = req.user.id;
-
         // Check if unit exists and is available
-        const unit = await prisma.unit.findUnique({
+        const unit = await prisma_1.default.unit.findUnique({
             where: { id: unitId },
         });
-
         if (!unit) {
             return res.status(404).json({ error: "Unit not found" });
         }
-
         if (unit.status !== 'available') {
             return res.status(400).json({ error: "Unit is not available" });
         }
-
-        const newContract = await prisma.contract.create({
+        const newContract = await prisma_1.default.contract.create({
             data: {
                 clientId,
                 unitId,
@@ -151,27 +129,24 @@ router.post("/", authenticateToken, async (req: AuthRequest, res: any) => {
                 createdBy,
             },
         });
-
         // Update unit status to rented
-        await prisma.unit.update({
+        await prisma_1.default.unit.update({
             where: { id: unitId },
             data: { status: 'rented' }
         });
-
         res.status(201).json(newContract);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to create contract" });
     }
 });
-
 // UPDATE contract
-router.put("/:id", authenticateToken, async (req, res) => {
+router.put("/:id", auth_1.authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { title, content, draft, endDate, monthlyRate } = req.body;
-
-        const updatedContract = await prisma.contract.update({
+        const updatedContract = await prisma_1.default.contract.update({
             where: { id: Number(id) },
             data: {
                 ...(title && { title }),
@@ -181,51 +156,44 @@ router.put("/:id", authenticateToken, async (req, res) => {
                 ...(endDate && { endDate: new Date(endDate) }),
             },
         });
-
         res.json(updatedContract);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to update contract" });
     }
 });
-
 // DELETE contract
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/:id", auth_1.authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-
         // First get the contract to get the unitId
-        const contract = await prisma.contract.findUnique({
+        const contract = await prisma_1.default.contract.findUnique({
             where: { id: Number(id) }
         });
-
         if (!contract) {
             return res.status(404).json({ error: "Contract not found" });
         }
-
-        await prisma.contract.delete({
+        await prisma_1.default.contract.delete({
             where: { id: Number(id) },
         });
-
         // Update unit status back to available
-        await prisma.unit.update({
+        await prisma_1.default.unit.update({
             where: { id: contract.unitId },
             data: { status: 'available' }
         });
-
         res.json({ success: true });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to delete contract" });
     }
 });
-
 // GET contracts by client ID
-router.get("/client/:clientId", authenticateToken, async (req: AuthRequest, res: any) => {
+router.get("/client/:clientId", auth_1.authenticateToken, async (req, res) => {
     try {
         const { clientId } = req.params;
-
-        const contracts = await prisma.contract.findMany({
+        const contracts = await prisma_1.default.contract.findMany({
             where: { clientId },
             include: {
                 unit: {
@@ -244,35 +212,32 @@ router.get("/client/:clientId", authenticateToken, async (req: AuthRequest, res:
             },
             orderBy: { createdAt: "desc" },
         });
-
         res.json(contracts);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch client contracts" });
     }
 });
-
 // GET contracts statistics
-router.get("/stats/overview", authenticateToken, async (req, res) => {
+router.get("/stats/overview", auth_1.authenticateToken, async (req, res) => {
     try {
-        const totalContracts = await prisma.contract.count();
-        const activeContracts = await prisma.contract.count({
+        const totalContracts = await prisma_1.default.contract.count();
+        const activeContracts = await prisma_1.default.contract.count({
             where: { draft: false }
         });
-        const draftContracts = await prisma.contract.count({
+        const draftContracts = await prisma_1.default.contract.count({
             where: { draft: true }
         });
-
         res.json({
             total: totalContracts,
             active: activeContracts,
             drafts: draftContracts
         });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch contract statistics" });
     }
 });
-
-
-export default router;
+exports.default = router;

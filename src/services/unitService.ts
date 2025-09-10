@@ -4,14 +4,14 @@ export const createUnit = async (
     type: string,
     monthlyRate: number,
     createdBy: number,
-    clientId?: number
+    clientId?: string
 ) => {
     return prisma.unit.create({
         data: {
             type,
             monthlyRate,
             createdBy,
-            clientId: clientId || null,
+            clientId,
             status: "available",
         },
     });

@@ -1,19 +1,17 @@
-import { Router } from "express";
-import prisma from "../lib/prisma";
-import { createNotification } from "../services/notificationService";
-import puppeteer from "puppeteer";
-
-const router = Router();
-interface AuthRequest extends Request {
-    user?: any
-    params: any;
-    body: any;
-    query: any
-}
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = __importDefault(require("../lib/prisma"));
+const notificationService_1 = require("../services/notificationService");
+const puppeteer_1 = __importDefault(require("puppeteer"));
+const router = (0, express_1.Router)();
 // GET all payments
 router.get("/", async (req, res) => {
     try {
-        const payments = await prisma.payment.findMany({
+        const payments = await prisma_1.default.payment.findMany({
             include: {
                 client: { select: { id: true, name: true } },
                 unit: { select: { id: true, type: true } },
@@ -21,44 +19,38 @@ router.get("/", async (req, res) => {
             orderBy: { createdAt: "desc" },
         });
         res.json(payments);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch payments" });
     }
 });
-
 // POST create a new payment
-router.post("/", async (req: AuthRequest, res: any) => {
+router.post("/", async (req, res) => {
     try {
         const { clientId, unitId, amount } = req.body;
-
         if (!clientId || !unitId || !amount) {
             return res.status(400).json({ error: "Missing required fields" });
         }
-
         // Validate amount is positive
         if (Number(amount) <= 0) {
             return res.status(400).json({ error: "Amount must be positive" });
         }
-
         // Ensure client exists
-        const client = await prisma.client.findUnique({ where: { id: clientId } });
-        if (!client) return res.status(400).json({ error: "Invalid clientId" });
-
+        const client = await prisma_1.default.client.findUnique({ where: { id: clientId } });
+        if (!client)
+            return res.status(400).json({ error: "Invalid clientId" });
         // Ensure unit exists and belongs to client
-        const unit = await prisma.unit.findUnique({
+        const unit = await prisma_1.default.unit.findUnique({
             where: { id: Number(unitId) }
         });
-
         if (!unit) {
             return res.status(400).json({ error: "Invalid unitId" });
         }
-
         if (unit.clientId !== clientId) {
             return res.status(400).json({ error: "Unit does not belong to client" });
         }
-
-        const payment = await prisma.payment.create({
+        const payment = await prisma_1.default.payment.create({
             data: {
                 clientId,
                 unitId: Number(unitId),
@@ -66,8 +58,7 @@ router.post("/", async (req: AuthRequest, res: any) => {
                 status: "pending",
             },
         });
-
-        await createNotification({
+        await (0, notificationService_1.createNotification)({
             clientId: payment.clientId,
             userId: req.user.id, // must match User.id type
             title: "New Payment Created",
@@ -76,45 +67,40 @@ router.post("/", async (req: AuthRequest, res: any) => {
             relatedEntity: "payment",
             entityId: payment.id,
         });
-
-
         res.status(201).json(payment);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to create payment" });
     }
 });
-
 // PATCH update payment
-router.patch("/:id", async (req: AuthRequest, res: any) => {
+router.patch("/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const { status, paidAt } = req.body;
-
-        const payment = await prisma.payment.findUnique({ where: { id } });
-        if (!payment) return res.status(404).json({ error: "Payment not found" });
-
-        const updatedPayment = await prisma.payment.update({
+        const payment = await prisma_1.default.payment.findUnique({ where: { id } });
+        if (!payment)
+            return res.status(404).json({ error: "Payment not found" });
+        const updatedPayment = await prisma_1.default.payment.update({
             where: { id },
             data: {
-                status: status as "pending" | "paid" | "overdue",
+                status: status,
                 paidAt: paidAt ? new Date(paidAt) : null,
             },
         });
-
         let message = "";
-        let type: "info" | "success" | "warning" = "info";
-
+        let type = "info";
         if (status === "paid") {
             message = `Your payment of $${payment.amount} has been received.`;
             type = "success";
-        } else if (status === "overdue") {
+        }
+        else if (status === "overdue") {
             message = `Your payment of $${payment.amount} is overdue.`;
             type = "warning";
         }
-
         if (message) {
-            await createNotification({
+            await (0, notificationService_1.createNotification)({
                 clientId: payment.clientId,
                 title: "Payment Updated",
                 message: `A new payment of $${payment.amount} has been updated for unit ${id}.`,
@@ -124,9 +110,9 @@ router.patch("/:id", async (req: AuthRequest, res: any) => {
                 userId: req.user.id, // <-- add this
             });
         }
-
         res.json(updatedPayment);
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to update payment" });
     }
@@ -134,39 +120,34 @@ router.patch("/:id", async (req: AuthRequest, res: any) => {
 router.delete("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-
         // Check if payment exists
-        const payment = await prisma.payment.findUnique({ where: { id } });
+        const payment = await prisma_1.default.payment.findUnique({ where: { id } });
         if (!payment) {
             return res.status(404).json({ error: "Payment not found" });
         }
-
         // Delete the payment
-        await prisma.payment.delete({
+        await prisma_1.default.payment.delete({
             where: { id },
         });
-
         res.json({ success: true, message: "Payment deleted successfully" });
-    } catch (err) {
+    }
+    catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to delete payment" });
     }
 });
-
 router.get("/:id/invoice", async (req, res) => {
     try {
         const id = req.params.id;
-
-        const payment = await prisma.payment.findUnique({
+        const payment = await prisma_1.default.payment.findUnique({
             where: { id },
             include: {
                 client: { select: { id: true, name: true, email: true, phone: true } },
                 unit: { select: { id: true, type: true, monthlyRate: true } },
             },
         });
-
-        if (!payment) return res.status(404).json({ error: "Payment not found" });
-
+        if (!payment)
+            return res.status(404).json({ error: "Payment not found" });
         // Build HTML invoice
         const html = `
       <!doctype html>
@@ -222,9 +203,8 @@ router.get("/:id/invoice", async (req, res) => {
         </body>
       </html>
     `;
-
         // Render PDF with Puppeteer
-        const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        const browser = await puppeteer_1.default.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: "networkidle0" });
         const pdfBuffer = await page.pdf({
@@ -233,13 +213,13 @@ router.get("/:id/invoice", async (req, res) => {
             margin: { top: "20mm", bottom: "20mm", left: "20mm", right: "20mm" },
         });
         await browser.close();
-
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename=invoice-${payment.id}.pdf`);
         res.send(pdfBuffer);
-    } catch (err) {
+    }
+    catch (err) {
         console.error("Failed to generate invoice:", err);
         res.status(500).json({ error: "Failed to generate invoice" });
     }
 });
-export default router;
+exports.default = router;
