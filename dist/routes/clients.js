@@ -61,15 +61,16 @@ router.post("/", async (req, res) => {
         const client = await prisma_1.default.client.create({
             data: { name, email, phone, notes },
         });
-        // Log CRM activity
-        await prisma_1.default.activity.create({
-            data: {
-                userId: req.user.id,
-                clientId: client.id,
-                type: "client_created",
-                details: `Client ${client.name} was added.`,
-            },
-        });
+        if (req.user)
+            // Log CRM activity
+            await prisma_1.default.activity.create({
+                data: {
+                    userId: req.user.id,
+                    clientId: client.id,
+                    type: "client_created",
+                    details: `Client ${client.name} was added.`,
+                },
+            });
         res.status(201).json(client);
     }
     catch (error) {

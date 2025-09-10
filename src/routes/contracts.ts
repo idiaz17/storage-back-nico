@@ -4,9 +4,10 @@ import prisma from "../lib/prisma";
 import { authenticateToken } from "../middleware/auth";
 import puppeteer from "puppeteer";
 interface AuthRequest extends Request {
-  user: any
+  user?: any
   params: any;
-  body: any
+  body: any;
+  query: any
 }
 const router = Router();
 async function createNotification({
@@ -62,6 +63,7 @@ router.post("/", authenticateToken, async (req: AuthRequest, res: any) => {
   try {
     const { clientId, unitId, monthlyRate, startDate, endDate, title, content, draft } =
       req.body;
+
     const createdBy = req.user.id;
 
     const newContract = await prisma.contract.create({

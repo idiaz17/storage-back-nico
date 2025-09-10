@@ -6,11 +6,7 @@ import { authorizeRole } from "../middleware/authorizeRole";
 
 const router = Router();
 
-interface AuthRequest extends Request {
-    user: any
-    params: any;
-    body: any
-}
+
 /**
  * GET all clients (with related entities)
  * CRM-style: show full picture (contracts, units, payments, activities)
@@ -61,22 +57,22 @@ router.get("/:id", async (req, res) => {
  * POST new client
  * CRM-style: log an activity when client is created
  */
-router.post("/", async (req: AuthRequest, res: any) => {
+router.post("/", async (req, res) => {
     try {
         const { name, email, phone, notes } = req.body;
         const client = await prisma.client.create({
             data: { name, email, phone, notes },
         });
-
-        // Log CRM activity
-        await prisma.activity.create({
-            data: {
-                userId: req.user.id,
-                clientId: client.id,
-                type: "client_created",
-                details: `Client ${client.name} was added.`,
-            },
-        });
+        if (req.user)
+            // Log CRM activity
+            await prisma.activity.create({
+                data: {
+                    userId: req.user.id,
+                    clientId: client.id,
+                    type: "client_created",
+                    details: `Client ${client.name} was added.`,
+                },
+            });
 
         res.status(201).json(client);
     } catch (error) {
