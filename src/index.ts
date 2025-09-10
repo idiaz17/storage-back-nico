@@ -38,6 +38,7 @@ app.use(cors({
             'http://127.0.0.1:3000',
             'http://127.0.0.1:5173',
             'http://127.0.0.1:3152',
+            "http://192.168.1.39:3152"
             // Add your production domains here later
         ];
 
@@ -66,8 +67,8 @@ app.use("/contracts", authenticateToken, contractsRouter);
 app.use("/payments", authenticateToken, paymentsRouter);
 app.use("/admin/reservations", authenticateToken, adminReservationsRouter);
 
-app.use("/public/reservations", publicReservationsRouter); 
-app.use("/public/units", publicUnitsRouter); 
+app.use("/public/reservations", publicReservationsRouter);
+app.use("/public/units", publicUnitsRouter);
 
 
 app.listen(PORT, () => {
