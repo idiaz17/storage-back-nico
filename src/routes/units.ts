@@ -73,9 +73,9 @@ router.get("/:id/timeline", async (req, res) => {
     if (!unit) return res.status(404).json({ error: "Unit not found" });
 
     const timeline = [
-      ...unit.Payment.map(p => ({ type: "payment", createdAt: p.createdAt, detail: `Payment of $${p.amount} (${p.status})` })),
-      ...unit.contracts.map(c => ({ type: "contract", createdAt: c.createdAt, detail: `Contract: ${c.title} (${c.signed ? "signed" : "draft"})` })),
-      ...(unit.client?.notification ?? []).map(n => ({ type: "notification", createdAt: n.createdAt, detail: `${n.title}: ${n.message}` })),
+      ...unit.Payment.map((p: { createdAt: any; amount: string; status: string }) => ({ type: "payment", createdAt: p.createdAt, detail: `Payment of $${p.amount} (${p.status})` })),
+      ...unit.contracts.map((c: { createdAt: any; title: string; signed: string }) => ({ type: "contract", createdAt: c.createdAt, detail: `Contract: ${c.title} (${c.signed ? "signed" : "draft"})` })),
+      ...(unit.client?.notification ?? []).map((n: { createdAt: string; title: string; message: string }) => ({ type: "notification", createdAt: n.createdAt, detail: `${n.title}: ${n.message}` })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     res.json({ unitId: unit.id, timeline });

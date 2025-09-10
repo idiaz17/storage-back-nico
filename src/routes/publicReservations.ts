@@ -54,21 +54,21 @@ router.post("/", async (req, res) => {
         //     },
         // });
         const reservation = await prisma.reservation.create({
-    data: {
-        unitId: Number(unitId),
-        location,
-        type,
-        size,
-        entryDate: new Date(entryDate),
-        goodsValue,
-        postalCode,
-        firstName,
-        lastName,
-        email,
-        phone,
-        status: "pending",
-    },
-});
+            data: {
+                unitId: Number(unitId),
+                location,
+                type,
+                size,
+                entryDate: new Date(entryDate),
+                goodsValue,
+                postalCode,
+                firstName,
+                lastName,
+                email,
+                phone,
+                status: "pending",
+            },
+        });
 
 
         // ✅ Mark unit as reserved (so it disappears from /public/units/available)
@@ -76,22 +76,22 @@ router.post("/", async (req, res) => {
             where: { id: Number(unitId) },
             data: { status: "reserved" }, // 👈 Or create a "reserved" enum if you prefer
         });
-const admins = await prisma.user.findMany({ where: { role: "admin" } });
+        const admins = await prisma.user.findMany({ where: { role: "admin" } });
 
-const notifications = admins.map((admin) => ({
-  title: `New reservation from ${firstName} ${lastName}`,
-  message: `Reservation for unit #${unitId} (${type}, ${size}) on ${new Date(entryDate).toLocaleDateString()}`,
-  type: "reservation",
-  userId: admin.id,
-  relatedEntity: "reservation",
-  reservationId: reservation.id, // ✅ correct FK now
-}));
+        const notifications = admins.map((admin: { id: string }) => ({
+            title: `New reservation from ${firstName} ${lastName}`,
+            message: `Reservation for unit #${unitId} (${type}, ${size}) on ${new Date(entryDate).toLocaleDateString()}`,
+            type: "reservation",
+            userId: admin.id,
+            relatedEntity: "reservation",
+            reservationId: reservation.id, // ✅ correct FK now
+        }));
 
 
 
-await prisma.notification.createMany({
-    data: notifications,
-});
+        await prisma.notification.createMany({
+            data: notifications,
+        });
         return res.status(201).json({
             message: "Reservation submitted successfully",
             reservation,
