@@ -212,7 +212,7 @@ router.get("/stream", authenticateToken, async (req: AuthRequest, res: any) => {
             });
 
             if (newNotifications.length > 0) {
-                newNotifications.forEach((n) => {
+                newNotifications.forEach((n: any) => {
                     res.write(`data: ${JSON.stringify(n)}\n\n`);
                 });
                 lastTimestamp = new Date();
